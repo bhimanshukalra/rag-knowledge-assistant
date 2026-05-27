@@ -259,6 +259,7 @@ This structure can evolve as we build:
 ```text
 .
 ├── README.md
+├── pyproject.toml
 ├── rag.py
 ├── data/
 │   ├── raw/
@@ -348,6 +349,18 @@ project beginner-friendly while still moving toward a serious RAG system.
 
 ## Environment Notes
 
+This project targets Python 3.11 or newer. The current dependencies are listed in
+`pyproject.toml`.
+
+Create and activate a virtual environment:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install .
+```
+
 The current script uses environment variables through `python-dotenv`, so API keys
 should live in a local `.env` file. The `.env` file should not be committed.
 
@@ -355,6 +368,12 @@ Example:
 
 ```text
 GOOGLE_API_KEY=your_api_key_here
+```
+
+Run the starter script:
+
+```bash
+python rag.py
 ```
 
 ## Long-Term Definition of Done
