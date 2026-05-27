@@ -51,20 +51,6 @@ This project is meant to teach:
 - Evaluation-driven development.
 - Basic observability for latency and cost.
 
-## Current Starting Point
-
-The repository currently contains a small script, `rag.py`, that demonstrates the
-first version of RAG:
-
-1. Define a few in-memory documents.
-2. Retrieve relevant documents with a TF-IDF retriever.
-3. Pass retrieved context to a Gemini model.
-4. Print an answer to the user's question.
-
-This is intentionally simple. It gives us a working mental model before we add
-file ingestion, embeddings, databases, evaluation, permissions, and a user
-interface.
-
 ## High-Level Architecture
 
 The target system can be thought of as two main flows.
@@ -262,8 +248,10 @@ This structure can evolve as we build:
 ├── pyproject.toml
 ├── rag.py
 ├── data/
-│   ├── raw/
-│   └── processed/
+│   └── raw/
+│       ├── company-overview.txt
+│       ├── engineering-handbook.md
+│       └── security-guidelines.pdf
 ├── src/
 │   ├── ingestion/
 │   ├── retrieval/
