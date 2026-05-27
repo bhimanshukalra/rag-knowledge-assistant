@@ -1,0 +1,7 @@
+Acme Analytics is a fictional company used for this RAG learning project.
+The company builds analytics tools that help teams search internal knowledge,
+understand customer issues, and make better product decisions.
+
+The company knowledge assistant should answer questions using only the content
+that has been loaded into the retrieval system. If the answer is not present in
+the available sources, the assistant should say that it does not know.
