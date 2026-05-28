@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from chromadb.api.models.Collection import Collection
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data" / "raw"
@@ -73,11 +75,12 @@ def build_context(documents):
 
 def ask(
     question: str,
+    documents: list[Document],
     collection: Collection,
     embedding_model: GoogleGenerativeAIEmbeddings,
     llm: ChatGoogleGenerativeAI,
 ):
-    relevant_docs = retrieve_from_vector_store(question, collection, embedding_model)
+    relevant_docs = hybrid_retrieve(question, documents, collection, embedding_model)
     context = build_context(relevant_docs)
     prompt = f"""
 Answer the question using only the context below.
@@ -168,12 +171,66 @@ def retrieve_from_vector_store(
 
     results = collection.query(query_embeddings=[question_embedding], n_results=top_k)
 
-    retrieved_documents = []
+    retrieved_documents: list[Document] = []
 
     for content, metadata in zip(results["documents"][0], results["metadatas"][0]):
         retrieved_documents.append(Document(page_content=content, metadata=metadata))
 
     return retrieved_documents
+
+
+def retrieve_with_keywords(
+    question: str, documents: list[Document], top_k: int = TOP_K
+):
+    vectorizer = TfidfVectorizer()
+    document_vectors = vectorizer.fit_transform(
+        [document.page_content for document in documents]
+    )
+    question_vector = vectorizer.transform([question])
+
+    similarities = cosine_similarity(question_vector, document_vectors).flatten()
+    ranked_indexes = similarities.argsort()[::-1][:top_k]
+
+    return [documents[index] for index in ranked_indexes]
+
+
+def get_document_key(document: Document):
+    return (document.metadata["source"], document.metadata["chunk"])
+
+
+def hybrid_retrieve(
+    question: str,
+    documents: list[Document],
+    collection: Collection,
+    embedding_model: GoogleGenerativeAIEmbeddings,
+    top_k: int = TOP_K,
+):
+    keyword_docs = retrieve_with_keywords(question, documents, top_k=top_k)
+    vector_docs = retrieve_from_vector_store(
+        question, collection, embedding_model, top_k=top_k
+    )
+
+    print("Vector results:")
+    for document in vector_docs:
+        print("-", document.metadata)
+
+    print("Keyword results:")
+    for document in keyword_docs:
+        print("-", document.metadata)
+
+    combined_docs = []
+    seen = set()
+
+    for document in vector_docs + keyword_docs:
+        key = get_document_key(document)
+
+        if key in seen:
+            continue
+
+        combined_docs.append(document)
+        seen.add(key)
+
+    return combined_docs[:top_k]
 
 
 def main():
@@ -195,7 +252,7 @@ def main():
     llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0)
 
     question = input("Ask a question: ")
-    answer = ask(question, collection, embedding_model, llm)
+    answer = ask(question, documents, collection, embedding_model, llm)
 
     print("\nAnswer: ")
     print(answer)
