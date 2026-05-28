@@ -173,7 +173,7 @@ Learning focus:
 - Indexing
 - Metadata storage and filtering
 
-### Milestone 5: Hybrid Search
+### Milestone 5A: Simple Hybrid Search
 
 - Add keyword search.
 - Combine keyword results with vector results.
@@ -185,6 +185,20 @@ Learning focus:
 - Semantic matching
 - Hybrid retrieval
 - Ranking tradeoffs
+
+### Milestone 5B: Reciprocal Rank Fusion
+
+- Retrieve ranked candidates from keyword search and vector search.
+- Combine the two ranked lists with Reciprocal Rank Fusion.
+- Prefer chunks that rank well across multiple retrieval methods.
+- Compare RRF results with the simple hybrid merge.
+
+Learning focus:
+
+- Rank fusion
+- Why raw keyword and vector scores are hard to compare directly
+- Balancing exact-match and semantic retrieval
+- Preparing better candidates for reranking
 
 ### Milestone 6: Reranking
 

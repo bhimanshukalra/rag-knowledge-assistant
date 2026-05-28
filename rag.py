@@ -8,17 +8,40 @@ from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from typing import Literal
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data" / "raw"
 SUPPORTED_EXTENSIONS = {".txt", ".md"}
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
-TOP_K = 2
+TOP_K = 5
 EMBEDDING_MODEL = "models/gemini-embedding-001"
 CHAT_MODEL = "gemini-2.5-flash"
 VECTOR_DB_DIR = BASE_DIR / "data" / "vector_db"
 COLLECTION_NAME = "company_knowledge"
+RRF_K = 60
+CANDIDATE_K = 5
+
+
+def add_rrf_scores(
+    scores: dict,
+    documents: list[Document],
+    source_name: Literal["vector", "keyword"],
+    rrf_k=RRF_K,
+):
+    for rank, document in enumerate(documents, start=1):
+        key = get_document_key(document)
+
+        if key not in scores:
+            scores[key] = {
+                "document": document,
+                "score": 0,
+                "sources": [],
+            }
+
+        scores[key]["score"] += 1 / (rrf_k + rank)
+        scores[key]["sources"].append(source_name)
 
 
 def chunk_text(text, chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP):
@@ -205,32 +228,24 @@ def hybrid_retrieve(
     embedding_model: GoogleGenerativeAIEmbeddings,
     top_k: int = TOP_K,
 ):
-    keyword_docs = retrieve_with_keywords(question, documents, top_k=top_k)
+    keyword_docs = retrieve_with_keywords(question, documents, top_k=CANDIDATE_K)
     vector_docs = retrieve_from_vector_store(
-        question, collection, embedding_model, top_k=top_k
+        question, collection, embedding_model, top_k=CANDIDATE_K
     )
 
-    print("Vector results:")
-    for document in vector_docs:
-        print("-", document.metadata)
+    scores = {}
 
-    print("Keyword results:")
-    for document in keyword_docs:
-        print("-", document.metadata)
+    add_rrf_scores(scores, vector_docs, source_name="vector")
+    add_rrf_scores(scores, keyword_docs, source_name="keyword")
 
-    combined_docs = []
-    seen = set()
+    ranked_results = sorted(
+        scores.values(), key=lambda item: item["score"], reverse=True
+    )
 
-    for document in vector_docs + keyword_docs:
-        key = get_document_key(document)
+    for item in ranked_results:
+        print(item["score"], item["document"].metadata)
 
-        if key in seen:
-            continue
-
-        combined_docs.append(document)
-        seen.add(key)
-
-    return combined_docs[:top_k]
+    return [item["document"] for item in ranked_results[:top_k]]
 
 
 def main():
