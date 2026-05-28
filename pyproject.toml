@@ -9,12 +9,10 @@ description = "A project-based learning repository for building a serious RAG sy
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "langchain>=0.3.30",
-    "langchain-community>=0.3.31",
+    "chromadb>=1.0.0",
     "langchain-core>=0.3.86",
     "langchain-google-genai>=2.1.12",
     "python-dotenv>=1.2.1",
-    "scikit-learn>=1.6.1",
 ]
 
 [tool.setuptools]
