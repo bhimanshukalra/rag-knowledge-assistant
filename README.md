@@ -145,18 +145,33 @@ Learning focus:
 - Context window limits
 - How bad chunking causes bad answers
 
-### Milestone 4: Embeddings and Vector Search
+### Milestone 4A: In-Memory Embeddings and Vector Search
 
 - Generate embeddings for each chunk.
-- Store chunks in a vector database.
+- Store embeddings in memory while the script is running.
 - Retrieve chunks by semantic similarity.
+- Compare semantic retrieval with the earlier TF-IDF retrieval behavior.
 
 Learning focus:
 
 - Embeddings
 - Vector similarity
-- Vector databases
+- Semantic search
 - Why semantic search is different from keyword search
+
+### Milestone 4B: Persist Embeddings in a Vector Database
+
+- Choose a beginner-friendly vector database.
+- Store chunks, embeddings, and metadata in the vector database.
+- Load existing indexed chunks instead of rebuilding everything every run.
+- Retrieve chunks from the vector database by semantic similarity.
+
+Learning focus:
+
+- Vector databases
+- Persistence
+- Indexing
+- Metadata storage and filtering
 
 ### Milestone 5: Hybrid Search
 
