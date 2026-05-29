@@ -9,6 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Literal
+from flashrank import Ranker, RerankRequest
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data" / "raw"
@@ -24,6 +25,37 @@ TOP_K = 2
 CANDIDATE_K = 5
 RERANK_CANDIDATE_K = 5
 RERANK_TOP_K = 2
+RERANKER_MODEL = "ms-marco-MiniLM-L-12-v2"
+
+
+def rerank_documents_with_model(
+    question: str,
+    documents: list[Document],
+    reranker: Ranker,
+    top_k: int = RERANK_TOP_K,
+):
+    if not documents:
+        return []
+
+    passages = [
+        {
+            "id": index,
+            "text": document.page_content,
+            "metadata": document.metadata,
+        }
+        for index, document in enumerate(documents)
+    ]
+
+    request = RerankRequest(query=question, passages=passages)
+    results = reranker.rerank(request)
+
+    rerank_documents = []
+
+    for result in results[:top_k]:
+        document_index = result["id"]
+        rerank_documents.append(documents[document_index])
+
+    return rerank_documents
 
 
 def add_rrf_scores(
@@ -103,12 +135,13 @@ def ask(
     documents: list[Document],
     collection: Collection,
     embedding_model: GoogleGenerativeAIEmbeddings,
+    reranker: Ranker,
     llm: ChatGoogleGenerativeAI,
 ):
     candidate_docs = hybrid_retrieve(
         question, documents, collection, embedding_model, top_k=RERANK_CANDIDATE_K
     )
-    relevant_docs = rerank_documents(question, candidate_docs, llm)
+    relevant_docs = rerank_documents_with_model(question, candidate_docs, reranker)
     context = build_context(relevant_docs)
     prompt = f"""
 Answer the question using only the context below.
@@ -226,7 +259,7 @@ def get_document_key(document: Document):
     return (document.metadata["source"], document.metadata["chunk"])
 
 
-def rerank_documents(
+def rerank_documents_with_llm(
     question: str,
     documents: list[Document],
     llm: ChatGoogleGenerativeAI,
@@ -255,7 +288,7 @@ Candidates:
 {candidates}
 
 Return only the candidate numbers for the {top_k} most relevant candidates.
-Return them as a comma-seperated list, for example: 2, 1
+Return them as a comma-separated list, for example: 2, 1
 Do not include explanations.
 """
 
@@ -333,7 +366,8 @@ def main():
     llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0)
 
     question = input("Ask a question: ")
-    answer = ask(question, documents, collection, embedding_model, llm)
+    reranker = Ranker(model_name=RERANKER_MODEL)
+    answer = ask(question, documents, collection, embedding_model, reranker, llm)
 
     print("\nAnswer: ")
     print(answer)
