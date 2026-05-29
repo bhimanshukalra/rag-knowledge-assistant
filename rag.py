@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Literal
 
 import chromadb
-from flashrank import Ranker, RerankRequest
 from chromadb.api.models.Collection import Collection
 from dotenv import load_dotenv
+from flashrank import Ranker, RerankRequest
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -27,6 +27,14 @@ CANDIDATE_K = 5
 RERANK_CANDIDATE_K = 5
 RERANK_TOP_K = 2
 RERANKER_MODEL = "ms-marco-MiniLM-L-12-v2"
+USERS = {
+    "alice": {"groups": ["general", "engineering"]},
+    "bob": {"groups": ["general"]},
+}
+SOURCE_ACCESS = {
+    "company-overview.txt": ["general"],
+    "engineering-handbook.md": ["engineering"],
+}
 
 
 def rerank_documents_with_model(
@@ -113,7 +121,11 @@ def load_documents(data_dir=DATA_DIR):
             documents.append(
                 Document(
                     page_content=chunk,
-                    metadata={"source": path.name, "chunk": chunk_index},
+                    metadata={
+                        "source": path.name,
+                        "chunk": chunk_index,
+                        "access_groups": SOURCE_ACCESS.get(path.name, ["general"]),
+                    },
                 )
             )
 
@@ -157,9 +169,22 @@ def ask(
     embedding_model: GoogleGenerativeAIEmbeddings,
     reranker: Ranker,
     llm: ChatGoogleGenerativeAI,
+    user_groups: list[str],
 ):
+    accessible_documents = [
+        document for document in documents if user_can_access(document, user_groups)
+    ]
+
+    if not accessible_documents:
+        return "I do not know based on the available sources."
+
     candidate_docs = hybrid_retrieve(
-        question, documents, collection, embedding_model, top_k=RERANK_CANDIDATE_K
+        question,
+        accessible_documents,
+        collection,
+        embedding_model,
+        user_groups,
+        top_k=RERANK_CANDIDATE_K,
     )
     relevant_docs = rerank_documents_with_model(question, candidate_docs, reranker)
     context = build_context(relevant_docs)
@@ -214,6 +239,51 @@ def get_vector_collection():
     return client.get_or_create_collection(name=COLLECTION_NAME)
 
 
+def normalize_access_groups(metadata: dict):
+    access_groups = metadata.get("access_groups", "")
+
+    if isinstance(access_groups, str):
+        return [group for group in access_groups.split(",") if group]
+
+    return access_groups
+
+
+def user_can_access(document: Document, user_groups: list[str]):
+    allowed_groups = document.metadata.get("access_groups", [])
+
+    return bool(set(allowed_groups) & set(user_groups))
+
+
+def get_access_flag(group: str):
+    return f"access_{group}"
+
+
+def build_access_metadata(access_groups: list[str]):
+    metadata = {"access_groups": ",".join(access_groups)}
+
+    for group in access_groups:
+        metadata[get_access_flag(group)] = True
+
+    return metadata
+
+
+def metadata_matches_access_groups(metadata: dict, access_groups: list[str]):
+    expected_access_metadata = build_access_metadata(access_groups)
+
+    return all(
+        metadata.get(key) == value for key, value in expected_access_metadata.items()
+    )
+
+
+def build_access_filter(user_groups: list[str]):
+    access_filters = [{get_access_flag(group): True} for group in user_groups]
+
+    if len(access_filters) == 1:
+        return access_filters[0]
+
+    return {"$or": access_filters}
+
+
 def index_documents(
     collection: Collection,
     documents: list[Document],
@@ -229,9 +299,14 @@ def index_documents(
     for document in documents:
         document_id = get_document_id(document)
         content_hash = get_document_hash(document)
+        access_groups = document.metadata["access_groups"]
         existing_metadata = existing_metadata_by_id.get(document_id) or {}
 
-        if existing_metadata.get("content_hash") == content_hash:
+        if existing_metadata.get(
+            "content_hash"
+        ) == content_hash and metadata_matches_access_groups(
+            existing_metadata, access_groups
+        ):
             continue
 
         documents_to_index.append(document.page_content)
@@ -241,6 +316,7 @@ def index_documents(
                 "source": document.metadata["source"],
                 "chunk": document.metadata["chunk"],
                 "content_hash": content_hash,
+                **build_access_metadata(access_groups),
             }
         )
 
@@ -263,16 +339,26 @@ def retrieve_from_vector_store(
     question: str,
     collection: Collection,
     embedding_model: GoogleGenerativeAIEmbeddings,
+    user_groups: list[str],
     top_k: int = TOP_K,
 ):
     question_embedding = embedding_model.embed_query(question)
 
-    results = collection.query(query_embeddings=[question_embedding], n_results=top_k)
+    results = collection.query(
+        query_embeddings=[question_embedding],
+        n_results=top_k,
+        where=build_access_filter(user_groups),
+    )
 
     retrieved_documents: list[Document] = []
 
     for content, metadata in zip(results["documents"][0], results["metadatas"][0]):
-        retrieved_documents.append(Document(page_content=content, metadata=metadata))
+        metadata["access_groups"] = normalize_access_groups(metadata)
+        document = Document(page_content=content, metadata=metadata)
+        if user_can_access(document, user_groups):
+            retrieved_documents.append(document)
+        if len(retrieved_documents) == top_k:
+            break
 
     return retrieved_documents
 
@@ -296,57 +382,6 @@ def get_document_key(document: Document):
     return (document.metadata["source"], document.metadata["chunk"])
 
 
-def rerank_documents_with_llm(
-    question: str,
-    documents: list[Document],
-    llm: ChatGoogleGenerativeAI,
-    top_k: int = RERANK_TOP_K,
-):
-    if not documents:
-        return []
-
-    candidates = "\n\n".join(
-        (
-            f"Candidate {index}\n"
-            f"Source: {document.metadata['source']} | "
-            f"Chunk: {document.metadata['chunk']}\n"
-            f"{document.page_content}"
-        )
-        for index, document in enumerate(documents, start=1)
-    )
-
-    prompt = f"""
-You are reranking retrieved context chunks for a RAG system.
-
-Question:
-{question}
-
-Candidates:
-{candidates}
-
-Return only the candidate numbers for the {top_k} most relevant candidates.
-Return them as a comma-separated list, for example: 2, 1
-Do not include explanations.
-"""
-
-    response = llm.invoke(prompt)
-    selected_indexes = parse_rerank_response(response.content)
-
-    if not selected_indexes:
-        return documents[:top_k]
-
-    reranked_documents: list[Document] = []
-
-    for index in selected_indexes:
-        if 1 <= index <= len(documents):
-            reranked_documents.append(documents[index - 1])
-
-        if len(reranked_documents) == top_k:
-            break
-
-    return reranked_documents
-
-
 def parse_rerank_response(response_text: str):
     indexes = []
     for part in response_text.split(","):
@@ -362,14 +397,15 @@ def parse_rerank_response(response_text: str):
 
 def hybrid_retrieve(
     question: str,
-    documents: list[Document],
+    accessible_documents: list[Document],
     collection: Collection,
     embedding_model: GoogleGenerativeAIEmbeddings,
+    user_groups: list[str],
     top_k: int = TOP_K,
 ):
-    keyword_docs = retrieve_with_keywords(question, documents, top_k=top_k)
+    keyword_docs = retrieve_with_keywords(question, accessible_documents, top_k=top_k)
     vector_docs = retrieve_from_vector_store(
-        question, collection, embedding_model, top_k=top_k
+        question, collection, embedding_model, user_groups, top_k=top_k
     )
 
     scores: dict = {}
@@ -402,9 +438,18 @@ def main():
 
     llm = ChatGoogleGenerativeAI(model=CHAT_MODEL, temperature=0)
 
+    username = input("What's your username? ").strip().lower()
+    if username not in USERS:
+        raise ValueError(f"Unknown user: {username}")
+
+    user_groups = USERS[username]["groups"]
+
     question = input("Ask a question: ")
     reranker = Ranker(model_name=RERANKER_MODEL)
-    answer = ask(question, documents, collection, embedding_model, reranker, llm)
+
+    answer = ask(
+        question, documents, collection, embedding_model, reranker, llm, user_groups
+    )
 
     print("\nAnswer: ")
     print(answer)
