@@ -15,20 +15,22 @@ DATA_DIR = BASE_DIR / "data" / "raw"
 SUPPORTED_EXTENSIONS = {".txt", ".md"}
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
-TOP_K = 5
 EMBEDDING_MODEL = "models/gemini-embedding-001"
 CHAT_MODEL = "gemini-2.5-flash"
 VECTOR_DB_DIR = BASE_DIR / "data" / "vector_db"
 COLLECTION_NAME = "company_knowledge"
 RRF_K = 60
+TOP_K = 2
 CANDIDATE_K = 5
+RERANK_CANDIDATE_K = 5
+RERANK_TOP_K = 2
 
 
 def add_rrf_scores(
     scores: dict,
     documents: list[Document],
     source_name: Literal["vector", "keyword"],
-    rrf_k=RRF_K,
+    rrf_k: int = RRF_K,
 ):
     for rank, document in enumerate(documents, start=1):
         key = get_document_key(document)
@@ -103,7 +105,10 @@ def ask(
     embedding_model: GoogleGenerativeAIEmbeddings,
     llm: ChatGoogleGenerativeAI,
 ):
-    relevant_docs = hybrid_retrieve(question, documents, collection, embedding_model)
+    candidate_docs = hybrid_retrieve(
+        question, documents, collection, embedding_model, top_k=RERANK_CANDIDATE_K
+    )
+    relevant_docs = rerank_documents(question, candidate_docs, llm)
     context = build_context(relevant_docs)
     prompt = f"""
 Answer the question using only the context below.
@@ -221,6 +226,70 @@ def get_document_key(document: Document):
     return (document.metadata["source"], document.metadata["chunk"])
 
 
+def rerank_documents(
+    question: str,
+    documents: list[Document],
+    llm: ChatGoogleGenerativeAI,
+    top_k: int = RERANK_TOP_K,
+):
+    if not documents:
+        return []
+
+    candidates = "\n\n".join(
+        (
+            f"Candidate {index}\n"
+            f"Source: {document.metadata['source']} | "
+            f"Chunk: {document.metadata['chunk']}\n"
+            f"{document.page_content}"
+        )
+        for index, document in enumerate(documents, start=1)
+    )
+
+    prompt = f"""
+You are reranking retrieved context chunks for a RAG system.
+
+Question:
+{question}
+
+Candidates:
+{candidates}
+
+Return only the candidate numbers for the {top_k} most relevant candidates.
+Return them as a comma-seperated list, for example: 2, 1
+Do not include explanations.
+"""
+
+    response = llm.invoke(prompt)
+    selected_indexes = parse_rerank_response(response.content)
+
+    if not selected_indexes:
+        return documents[:top_k]
+
+    reranked_documents: list[Document] = []
+
+    for index in selected_indexes:
+        if 1 <= index <= len(documents):
+            reranked_documents.append(documents[index - 1])
+
+        if len(reranked_documents) == top_k:
+            break
+
+    return reranked_documents
+
+
+def parse_rerank_response(response_text: str):
+    indexes = []
+    for part in response_text.split(","):
+        part = part.strip()
+
+        if not part.isdigit():
+            continue
+
+        indexes.append(int(part))
+
+    return indexes
+
+
 def hybrid_retrieve(
     question: str,
     documents: list[Document],
@@ -233,7 +302,7 @@ def hybrid_retrieve(
         question, collection, embedding_model, top_k=CANDIDATE_K
     )
 
-    scores = {}
+    scores: dict = {}
 
     add_rrf_scores(scores, vector_docs, source_name="vector")
     add_rrf_scores(scores, keyword_docs, source_name="keyword")
@@ -241,9 +310,6 @@ def hybrid_retrieve(
     ranked_results = sorted(
         scores.values(), key=lambda item: item["score"], reverse=True
     )
-
-    for item in ranked_results:
-        print(item["score"], item["document"].metadata)
 
     return [item["document"] for item in ranked_results[:top_k]]
 

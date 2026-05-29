@@ -200,17 +200,33 @@ Learning focus:
 - Balancing exact-match and semantic retrieval
 - Preparing better candidates for reranking
 
-### Milestone 6: Reranking
+### Milestone 6A: LLM-Based Reranking
 
 - Retrieve more candidate chunks than needed.
-- Rerank them before sending context to the LLM.
-- Measure whether answers improve.
+- Ask the LLM to choose the most relevant chunks.
+- Send only selected chunks to the answer prompt.
+- Add fallback behavior if the reranking output is invalid.
 
 Learning focus:
 
-- Rerankers
+- LLM-based relevance judgment
 - Candidate retrieval vs final context selection
 - Reducing irrelevant context
+- Reranking failure modes
+
+### Milestone 6B: Dedicated Reranking Model
+
+- Use a reranker model instead of the answer LLM.
+- Compare dedicated reranking with LLM-based reranking.
+- Measure latency, cost, and quality tradeoffs.
+- Decide which reranking path is more appropriate for the project.
+
+Learning focus:
+
+- Dedicated reranker models
+- Cross-encoder style relevance scoring
+- Cost and latency tradeoffs
+- Production reranking patterns
 
 ### Milestone 7: Citations
 
