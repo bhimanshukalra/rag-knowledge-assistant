@@ -69,6 +69,11 @@ def print_report(results):
 
 
 def evaluate():
+    results = run_evaluation()
+    print_report(results)
+
+
+def run_evaluation():
     load_dotenv()
 
     documents = load_documents()
@@ -149,7 +154,7 @@ def evaluate():
         print(f"forbidden: {forbidden_source or '(none)'}")
         print(f"retrieved: {sorted_sources or ['(no source)']}")
 
-    print_report(results)
+    return results
 
 
 if __name__ == "__main__":
