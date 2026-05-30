@@ -268,20 +268,36 @@ Learning focus:
 - Regression testing
 - Building confidence through measurements
 
-### Milestone 10: Dashboard
+### Milestone 10A: CLI Evaluation Report
 
+- Extend the evaluation script with a clearer terminal report.
+- Show total questions, passed checks, failed checks, and retrieval accuracy.
+- List failed questions with expected, forbidden, and retrieved sources.
+- Add simple latency measurements per question.
+- Keep the report easy to run from the command line.
+
+Learning focus:
+
+- Observability
+- Retrieval metrics
+- Debugging failed cases
+- Latency measurement
+
+### Milestone 10B: Lightweight Dashboard UI
+
+- Build a small dashboard using the evaluation results.
 - Show retrieval accuracy.
-- Show answer quality scores.
+- Show answer quality scores when available.
 - Show latency.
 - Show estimated cost.
 - Track changes over time.
 
 Learning focus:
 
-- Observability
 - Product feedback loops
 - Cost awareness
 - Measuring RAG system health
+- Turning evaluation data into a useful interface
 
 ## Proposed Repository Structure
 

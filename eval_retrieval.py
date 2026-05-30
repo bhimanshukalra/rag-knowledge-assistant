@@ -1,4 +1,5 @@
 import csv
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -30,6 +31,43 @@ def get_sources(documents):
     return {document.metadata["source"] for document in documents}
 
 
+def print_report(results):
+    total_questions = len(results)
+    passed_count = sum(1 for result in results if result["success"])
+    failed_count = total_questions - passed_count
+    accuracy = (passed_count / total_questions) * 100 if total_questions else 0
+    average_latency = (
+        sum(result["latency"] for result in results) / total_questions
+        if total_questions
+        else 0
+    )
+
+    print("\nEvaluation Report")
+    print("=================")
+    print(f"Total questions: {total_questions}")
+    print(f"Passed: {passed_count}")
+    print(f"Failed: {failed_count}")
+    print(f"Retrieval accuracy: {accuracy:.1f}%")
+    print(f"Average latency: {average_latency:.2f}s")
+
+    failed_results = [result for result in results if not result["success"]]
+
+    print("\nFailed questions:")
+
+    if not failed_results:
+        print("None")
+        return
+
+    for result in failed_results:
+        print()
+        print(f"Question: {result['question']}")
+        print(f"User: {result['username']}")
+        print(f"Expected source: {result['expected_source'] or '(no source)'}")
+        print(f"Forbidden source: {result['forbidden_source'] or '(none)'}")
+        print(f"Retrieved sources: {', '.join(result['retrieved_sources'])}")
+        print(f"Reason: {result['reason']}")
+
+
 def evaluate():
     load_dotenv()
 
@@ -41,10 +79,10 @@ def evaluate():
     reranker = Ranker(model_name=RERANKER_MODEL)
 
     rows = load_eval_questions()
-
-    passed = 0
+    results = []
 
     for row in rows:
+        start_time = time.perf_counter()
         question = row["question"]
         username = row["username"]
         expected_source = row["expected_source"].strip()
@@ -79,32 +117,39 @@ def evaluate():
         retrieved_sources = get_sources(retrieved_docs)
 
         success = True
+        failure_reasons = []
 
         if expected_source and expected_source not in retrieved_sources:
             success = False
+            failure_reasons.append("Expected source was not retrieved")
 
         if forbidden_source and forbidden_source in retrieved_sources:
             success = False
-
-        if success:
-            passed += 1
+            failure_reasons.append("Forbidden source was retrieved")
 
         status = "PASS" if success else "FAIL"
+        latency = time.perf_counter() - start_time
+        sorted_sources = sorted(retrieved_sources)
 
-        print(f"{status}: {question}")
+        results.append(
+            {
+                "question": question,
+                "username": username,
+                "success": success,
+                "expected_source": expected_source,
+                "forbidden_source": forbidden_source,
+                "retrieved_sources": sorted_sources or ["(no source)"],
+                "latency": latency,
+                "reason": "; ".join(failure_reasons) if failure_reasons else "Passed",
+            }
+        )
+
+        print(f"{status} ({latency:.2f}s): {question}")
         print(f"expected: {expected_source or '(no source)'}")
         print(f"forbidden: {forbidden_source or '(none)'}")
-        print(f"retrieved: {sorted(retrieved_sources) or ['(no source)']}")
+        print(f"retrieved: {sorted_sources or ['(no source)']}")
 
-    total = len(rows)
-    accuracy = (passed / total) * 100 if total else 0
-
-    print(
-        f"Total questions: {total}\n"
-        f"Passed: {passed}\n"
-        f"Failed: {total - passed}\n"
-        f"Retrieval accuracy: {accuracy:.1f}%"
-    )
+    print_report(results)
 
 
 if __name__ == "__main__":
