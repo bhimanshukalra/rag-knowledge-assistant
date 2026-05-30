@@ -299,31 +299,50 @@ Learning focus:
 - Measuring RAG system health
 - Turning evaluation data into a useful interface
 
-## Proposed Repository Structure
+## Current Repository Structure
 
-This structure can evolve as we build:
+The reusable RAG code lives in the `company_knowledge_assistant` package. Runnable
+entrypoints live in `scripts/`, and the Streamlit dashboard stays at the project
+root.
 
 ```text
 .
 ├── README.md
 ├── pyproject.toml
-├── rag.py
+├── dashboard.py
+├── company_knowledge_assistant/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── documents.py
+│   ├── generation.py
+│   ├── permissions.py
+│   ├── reranking.py
+│   ├── retrieval.py
+│   └── vector_store.py
+├── scripts/
+│   ├── eval_retrieval.py
+│   └── rag.py
 ├── data/
 │   └── raw/
 │       ├── company-overview.txt
 │       ├── engineering-handbook.md
 │       └── security-guidelines.pdf
-├── src/
-│   ├── ingestion/
-│   ├── retrieval/
-│   ├── generation/
-│   ├── evaluation/
-│   └── app/
-├── tests/
-├── evals/
-│   └── questions.csv
-└── docs/
+└── evals/
+    └── questions.csv
 ```
+
+Main modules:
+
+- `config.py`: constants, model names, paths, users, and source access rules.
+- `documents.py`: file loading, chunking, document IDs, and content hashes.
+- `permissions.py`: user group checks and access metadata helpers.
+- `vector_store.py`: ChromaDB collection setup, indexing, and vector retrieval.
+- `retrieval.py`: TF-IDF keyword retrieval, vector retrieval, and hybrid search.
+- `reranking.py`: FlashRank reranking helpers.
+- `generation.py`: prompt construction, citation checks, safe LLM calls, and answers.
+- `scripts/rag.py`: terminal app for asking questions.
+- `scripts/eval_retrieval.py`: retrieval evaluation CLI report.
+- `dashboard.py`: Streamlit evaluation dashboard.
 
 ## Key Concepts
 
@@ -388,13 +407,25 @@ Each milestone should leave the project in a runnable state. When we add a new
 feature, we should also add a small way to test or evaluate it. This keeps the
 project beginner-friendly while still moving toward a serious RAG system.
 
-## First Next Steps
+## Current Run Commands
 
-1. Make the current `rag.py` easy to run.
-2. Add a few sample text files under `data/raw/`.
-3. Replace the hardcoded documents with loaded files.
-4. Add basic citations using filenames.
-5. Create the first 5 evaluation questions before the system becomes complex.
+Run the terminal assistant:
+
+```bash
+python scripts/rag.py
+```
+
+Run the retrieval evaluation report:
+
+```bash
+python scripts/eval_retrieval.py
+```
+
+Run the dashboard:
+
+```bash
+streamlit run dashboard.py
+```
 
 ## Environment Notes
 
@@ -410,7 +441,7 @@ python -m pip install --upgrade pip
 python -m pip install .
 ```
 
-The current script uses environment variables through `python-dotenv`, so API keys
+The scripts use environment variables through `python-dotenv`, so API keys
 should live in a local `.env` file. The `.env` file should not be committed.
 
 Example:
@@ -419,21 +450,141 @@ Example:
 GOOGLE_API_KEY=your_api_key_here
 ```
 
-Run the starter script:
+## Next Improvement Steps
 
-```bash
-python rag.py
-```
+The current project is a strong learning MVP. To keep improving it, work in small
+focused steps:
+
+1. Add tests for core behavior.
+   - Test chunking.
+   - Test permission filtering.
+   - Test citation detection.
+   - Test retrieval evaluation logic.
+
+2. Add PDF support.
+   - Extract text from PDFs in `data/raw/`.
+   - Preserve page numbers in metadata.
+   - Show page numbers in citations.
+
+3. Improve chunking.
+   - Move from character-based chunking to token-aware chunking.
+   - Try splitting by headings and paragraphs.
+   - Compare retrieval results across chunk sizes.
+
+4. Improve evaluation.
+   - Grow `evals/questions.csv` toward 50 realistic questions.
+   - Add more permission-related eval cases.
+   - Track retrieval accuracy over time.
+
+5. Add cost and usage tracking.
+   - Count embedding calls.
+   - Count answer-generation calls.
+   - Estimate cost per evaluation run.
+   - Show cost in the dashboard.
+
+6. Improve error handling.
+   - Add clearer handling for API failures.
+   - Add timeouts and retry behavior.
+   - Make dashboard failures easier to understand.
+
+7. Add a real ingestion workflow.
+   - Track which files have been indexed.
+   - Support reindexing changed files.
+   - Support deleting removed documents from the vector database.
+
+8. Add a user-facing app.
+   - Build a simple web chat interface.
+   - Add document upload.
+   - Show citations as clickable source references.
+
+9. Move toward production readiness.
+   - Add authentication.
+   - Store users and document permissions in a database.
+   - Add logging, tracing, and monitoring.
+   - Run evaluation checks in CI before merging changes.
+
+## RAG-Specific Improvement Areas
+
+These are the main areas to improve if focusing only on the RAG system itself,
+separate from UI, tests, packaging, or deployment:
+
+- Parsing: support PDFs, DOCX, HTML, and other source formats while preserving
+  source metadata.
+- Chunking: move beyond character-based chunks toward token-aware and
+  structure-aware splitting.
+- Metadata: store page numbers, headings, document type, access groups, chunk
+  IDs, and document versions.
+- Embeddings: avoid embedding noisy chunks, re-embed only changed content, and
+  compare embedding model quality.
+- Vector store lifecycle: support changed files, deleted files, rebuilds, and
+  reliable metadata filtering.
+- Keyword search: improve exact-match retrieval for names, IDs, acronyms, and
+  policy terms.
+- Hybrid retrieval: tune vector and keyword result counts, remove duplicates,
+  and handle low-confidence retrieval.
+- Reranking: compare reranker models, tune candidate counts, and measure whether
+  reranking improves final context quality.
+- Context construction: order chunks by relevance, avoid redundancy, preserve
+  source details, and stay within context limits.
+- Citations: cite exact source, page, and chunk, then verify citations support
+  the answer.
+- Unknown-answer behavior: say "I do not know" when retrieval finds no strong
+  supporting context.
+- Permissions: enforce access filters during retrieval and again before
+  generating answers or showing citations.
+- Query handling: support query rewriting, acronym expansion, metadata filters,
+  and follow-up questions later.
+- Failure handling: handle embedding, vector DB, reranker, and LLM failures
+  gracefully.
+- RAG metrics: track retrieved sources, latency, context chunks, citation count,
+  retrieval method contribution, and estimated cost.
 
 ## Long-Term Definition of Done
 
-This project is complete when:
+Current status against the long-term target:
 
-- A user can upload or ingest multiple knowledge sources.
-- The assistant answers questions using only permitted sources.
-- Every answer includes citations.
-- Retrieval combines keyword and vector search.
-- Reranking improves final context quality.
-- Evaluation results are tracked over time.
-- A dashboard shows quality, latency, and cost.
-- The codebase remains understandable to someone learning Python and RAG.
+- Partially done: A user can upload or ingest multiple knowledge sources.
+  The project can ingest multiple local `.txt` and `.md` files from `data/raw/`.
+  There is not yet an upload UI, and PDF parsing is not implemented yet.
+
+- Done for current scope: The assistant answers questions using only permitted
+  sources.
+  User groups and document access groups are checked before retrieval and
+  answering.
+
+- Mostly done: Every answer includes citations.
+  The answer prompt requires citations, and answers without citation markers are
+  rejected. The project does not yet verify that every citation truly supports
+  each claim.
+
+- Done: Retrieval combines keyword and vector search.
+  The project uses TF-IDF keyword retrieval, ChromaDB vector retrieval, and
+  hybrid retrieval with Reciprocal Rank Fusion.
+
+- Done as an MVP: Reranking improves final context quality.
+  FlashRank reranking is implemented. The project still needs deeper measurement
+  of how much reranking improves retrieval quality.
+
+- Partially done: Evaluation results are tracked over time.
+  The project has an evaluation script and dashboard, but evaluation runs are not
+  saved historically yet.
+
+- Partially done: A dashboard shows quality, latency, and cost.
+  The dashboard shows retrieval accuracy and latency. Cost and answer quality
+  scoring are not tracked yet.
+
+- Done: The codebase remains understandable to someone learning Python and RAG.
+  The code is split into a package with focused modules and runnable scripts.
+
+Overall, this project is complete as a serious learning MVP. It is not yet a
+production-ready RAG system.
+
+## Biggest Remaining Gaps
+
+- PDF parsing with page-level citations.
+- Upload or ingestion workflow for adding new documents.
+- Saved evaluation history across runs.
+- Actual cost tracking for embedding, reranking, and answer generation calls.
+- Answer quality scoring beyond retrieval correctness.
+- Stronger citation verification to check whether cited sources truly support
+  each claim.
