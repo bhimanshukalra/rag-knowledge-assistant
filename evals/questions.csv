@@ -1,0 +1,6 @@
+question,username,expected_source,forbidden_source
+Why should answers include citations?,alice,engineering-handbook.md,
+What does Acme Analytics build?,bob,company-overview.txt,
+What should the assistant do when sources do not contain the answer?,bob,company-overview.txt,
+Why should answers include citations?,bob,,engineering-handbook.md
+What does the engineering team prefer?,alice,engineering-handbook.md,
