@@ -36,7 +36,8 @@ def evaluate():
     documents = load_documents()
     embedding_model = GoogleGenerativeAIEmbeddings(model=EMBEDDING_MODEL)
     collection = get_vector_collection()
-    index_documents(collection, documents, embedding_model)
+    indexed_count = index_documents(collection, documents, embedding_model)
+    print(f"Indexed {indexed_count} new or changed chunks")
     reranker = Ranker(model_name=RERANKER_MODEL)
 
     rows = load_eval_questions()
@@ -48,6 +49,12 @@ def evaluate():
         username = row["username"]
         expected_source = row["expected_source"].strip()
         forbidden_source = row["forbidden_source"].strip()
+
+        if not expected_source and not forbidden_source:
+            raise ValueError(
+                "Eval row must include expected_source or forbidden_source: "
+                f"{question}"
+            )
 
         if username not in USERS:
             raise ValueError(f"Unknown username in eval row: {username}")
@@ -95,7 +102,7 @@ def evaluate():
     print(
         f"Total questions: {total}\n"
         f"Passed: {passed}\n"
-        f"Failed: {total-passed}\n"
+        f"Failed: {total - passed}\n"
         f"Retrieval accuracy: {accuracy:.1f}%"
     )
 
