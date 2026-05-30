@@ -503,6 +503,29 @@ focused steps:
    - Add logging, tracing, and monitoring.
    - Run evaluation checks in CI before merging changes.
 
+## High-ROI Showcase TODO
+
+These are the most worthwhile next improvements if the goal is to showcase this
+as a focused AI engineering project without turning it into a full SaaS:
+
+- [ ] Add PDF parsing with page-level citations.
+  This makes ingestion more realistic and improves trust in source attribution.
+
+- [ ] Add 20 to 30 strong evaluation questions.
+  Cover normal questions, restricted-access questions, no-answer questions,
+  exact-match questions, semantic questions, and PDF-backed questions.
+
+- [ ] Add a small test suite.
+  Focus on permissions, chunking, citation detection, and evaluation row
+  validation.
+
+- [ ] Add an architecture diagram and demo flow to the README.
+  Make it easy to understand the system quickly and run a short product demo.
+
+- [ ] Add a known limitations section.
+  Clearly mention local ChromaDB, simple local users, basic chunking, no real
+  upload workflow, and no production deployment yet.
+
 ## RAG-Specific Improvement Areas
 
 These are the main areas to improve if focusing only on the RAG system itself,
