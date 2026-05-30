@@ -2,7 +2,7 @@ import hashlib
 
 from langchain_core.documents import Document
 
-from config import (
+from company_knowledge_assistant.config import (
     DATA_DIR,
     CHUNK_OVERLAP,
     CHUNK_SIZE,

@@ -5,10 +5,10 @@ from flashrank import Ranker
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
-from config import RERANK_CANDIDATE_K
-from permissions import user_can_access
-from reranking import rerank_documents_with_model
-from retrieval import hybrid_retrieve
+from company_knowledge_assistant.config import RERANK_CANDIDATE_K
+from company_knowledge_assistant.permissions import user_can_access
+from company_knowledge_assistant.reranking import rerank_documents_with_model
+from company_knowledge_assistant.retrieval import hybrid_retrieve
 
 
 def build_context(documents: list[Document]):

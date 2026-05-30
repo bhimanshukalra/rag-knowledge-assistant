@@ -6,12 +6,21 @@ from dotenv import load_dotenv
 from flashrank import Ranker
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from config import EMBEDDING_MODEL, EVAL_FILE, RERANK_CANDIDATE_K, RERANKER_MODEL, USERS
-from documents import load_documents
-from permissions import user_can_access
-from reranking import rerank_documents_with_model
-from retrieval import hybrid_retrieve
-from vector_store import get_vector_collection, index_documents
+from company_knowledge_assistant.config import (
+    EMBEDDING_MODEL,
+    EVAL_FILE,
+    RERANK_CANDIDATE_K,
+    RERANKER_MODEL,
+    USERS,
+)
+from company_knowledge_assistant.documents import load_documents
+from company_knowledge_assistant.permissions import user_can_access
+from company_knowledge_assistant.reranking import rerank_documents_with_model
+from company_knowledge_assistant.retrieval import hybrid_retrieve
+from company_knowledge_assistant.vector_store import (
+    get_vector_collection,
+    index_documents,
+)
 
 
 def load_eval_questions(eval_file=EVAL_FILE):

@@ -4,11 +4,11 @@ from chromadb.api.models.Collection import Collection
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from config import RRF_K, TOP_K
+from company_knowledge_assistant.config import RRF_K, TOP_K
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from vector_store import retrieve_from_vector_store
+from company_knowledge_assistant.vector_store import retrieve_from_vector_store
 
 
 def retrieve_with_keywords(

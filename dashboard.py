@@ -1,6 +1,6 @@
 import streamlit as st
 
-from eval_retrieval import run_evaluation
+from scripts.eval_retrieval import run_evaluation
 
 st.set_page_config(page_title="RAG Evaluation Dashboard", layout="wide")
 

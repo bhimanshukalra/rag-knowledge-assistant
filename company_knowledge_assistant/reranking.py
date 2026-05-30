@@ -1,7 +1,7 @@
 from flashrank import Ranker, RerankRequest
 from langchain_core.documents import Document
 
-from config import RERANK_TOP_K
+from company_knowledge_assistant.config import RERANK_TOP_K
 
 
 def rerank_documents_with_model(

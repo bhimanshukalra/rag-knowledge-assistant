@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from flashrank import Ranker
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
-from config import (
+from company_knowledge_assistant.config import (
     CHAT_MODEL,
     DATA_DIR,
     EMBEDDING_MODEL,
@@ -10,9 +10,12 @@ from config import (
     USERS,
     VECTOR_DB_DIR,
 )
-from documents import load_documents
-from generation import ask
-from vector_store import get_vector_collection, index_documents
+from company_knowledge_assistant.documents import load_documents
+from company_knowledge_assistant.generation import ask
+from company_knowledge_assistant.vector_store import (
+    get_vector_collection,
+    index_documents,
+)
 
 
 def main():

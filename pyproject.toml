@@ -18,8 +18,9 @@ dependencies = [
     "streamlit>=1.40.0",
 ]
 
-[tool.setuptools]
-py-modules = ["rag"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["company_knowledge_assistant*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

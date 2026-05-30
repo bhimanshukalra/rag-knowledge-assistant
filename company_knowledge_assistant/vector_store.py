@@ -3,13 +3,13 @@ from chromadb.api.models.Collection import Collection
 from langchain_core.documents import Document
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from config import (
+from company_knowledge_assistant.config import (
     VECTOR_DB_DIR,
     COLLECTION_NAME,
     TOP_K,
 )
-from documents import get_document_hash, get_document_id
-from permissions import (
+from company_knowledge_assistant.documents import get_document_hash, get_document_id
+from company_knowledge_assistant.permissions import (
     build_access_filter,
     build_access_metadata,
     metadata_matches_access_groups,
