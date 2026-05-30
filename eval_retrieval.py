@@ -6,20 +6,12 @@ from dotenv import load_dotenv
 from flashrank import Ranker
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-from rag import (
-    EMBEDDING_MODEL,
-    RERANK_CANDIDATE_K,
-    RERANKER_MODEL,
-    USERS,
-    get_vector_collection,
-    hybrid_retrieve,
-    index_documents,
-    load_documents,
-    rerank_documents_with_model,
-    user_can_access,
-)
-
-EVAL_FILE = Path("evals/questions.csv")
+from config import EMBEDDING_MODEL, EVAL_FILE, RERANK_CANDIDATE_K, RERANKER_MODEL, USERS
+from documents import load_documents
+from permissions import user_can_access
+from reranking import rerank_documents_with_model
+from retrieval import hybrid_retrieve
+from vector_store import get_vector_collection, index_documents
 
 
 def load_eval_questions(eval_file=EVAL_FILE):
