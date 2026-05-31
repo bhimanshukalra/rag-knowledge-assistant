@@ -508,19 +508,27 @@ focused steps:
 These are the most worthwhile next improvements if the goal is to showcase this
 as a focused AI engineering project without turning it into a full SaaS:
 
+- [ ] Fix `DATA_DIR` and `VECTOR_DB_DIR` pathing.
+  After moving code into `company_knowledge_assistant/`, paths should resolve
+  from the repository root, not from inside the package directory.
+
 - [ ] Add PDF parsing with page-level citations.
   This makes ingestion more realistic and improves trust in source attribution.
 
-- [ ] Add 20 to 30 strong evaluation questions.
+- [ ] Expand evals to 25 to 50 strong questions.
   Cover normal questions, restricted-access questions, no-answer questions,
   exact-match questions, semantic questions, and PDF-backed questions.
 
 - [ ] Add a small test suite.
-  Focus on permissions, chunking, citation detection, and evaluation row
-  validation.
+  Focus on chunking, permissions, retrieval, citation detection, and evaluation
+  row validation.
 
-- [ ] Add an architecture diagram and demo flow to the README.
-  Make it easy to understand the system quickly and run a short product demo.
+- [ ] Add README screenshots and a short architecture diagram.
+  Make it easy to understand the system quickly before reading the code.
+
+- [ ] Add a demo flow section.
+  Show how to run ingestion, ask a question as Alice, ask a restricted question
+  as Bob, and view the evaluation dashboard.
 
 - [ ] Add a known limitations section.
   Clearly mention local ChromaDB, simple local users, basic chunking, no real
