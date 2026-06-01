@@ -508,7 +508,7 @@ focused steps:
 These are the most worthwhile next improvements if the goal is to showcase this
 as a focused AI engineering project without turning it into a full SaaS:
 
-- [ ] Fix `DATA_DIR` and `VECTOR_DB_DIR` pathing.
+- [x] Fix `DATA_DIR` and `VECTOR_DB_DIR` pathing.
   After moving code into `company_knowledge_assistant/`, paths should resolve
   from the repository root, not from inside the package directory.
 

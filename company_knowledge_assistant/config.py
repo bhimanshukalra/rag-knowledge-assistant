@@ -1,13 +1,14 @@
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data" / "raw"
+PACKAGE_DIR = Path(__file__).parent
+PROJECT_ROOT = PACKAGE_DIR.parent
+DATA_DIR = PROJECT_ROOT / "data" / "raw"
 SUPPORTED_EXTENSIONS = {".txt", ".md"}
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
 EMBEDDING_MODEL = "models/gemini-embedding-001"
 CHAT_MODEL = "gemini-2.5-flash"
-VECTOR_DB_DIR = BASE_DIR / "data" / "vector_db"
+VECTOR_DB_DIR = PROJECT_ROOT / "data" / "vector_db"
 COLLECTION_NAME = "company_knowledge"
 RRF_K = 60
 TOP_K = 2
