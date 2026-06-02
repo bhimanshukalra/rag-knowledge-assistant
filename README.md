@@ -512,7 +512,7 @@ as a focused AI engineering project without turning it into a full SaaS:
       After moving code into `company_knowledge_assistant/`, paths should resolve
       from the repository root, not from inside the package directory.
 
-- [x] Add PDF parsing with page-level citations.
+- [ ] Add PDF parsing with page-level citations.
       This makes ingestion more realistic and improves trust in source attribution.
 
 - [ ] Expand evals to 25 to 50 strong questions.
