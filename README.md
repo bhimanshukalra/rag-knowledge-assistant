@@ -509,30 +509,30 @@ These are the most worthwhile next improvements if the goal is to showcase this
 as a focused AI engineering project without turning it into a full SaaS:
 
 - [x] Fix `DATA_DIR` and `VECTOR_DB_DIR` pathing.
-  After moving code into `company_knowledge_assistant/`, paths should resolve
-  from the repository root, not from inside the package directory.
+      After moving code into `company_knowledge_assistant/`, paths should resolve
+      from the repository root, not from inside the package directory.
 
-- [ ] Add PDF parsing with page-level citations.
-  This makes ingestion more realistic and improves trust in source attribution.
+- [x] Add PDF parsing with page-level citations.
+      This makes ingestion more realistic and improves trust in source attribution.
 
 - [ ] Expand evals to 25 to 50 strong questions.
-  Cover normal questions, restricted-access questions, no-answer questions,
-  exact-match questions, semantic questions, and PDF-backed questions.
+      Cover normal questions, restricted-access questions, no-answer questions,
+      exact-match questions, semantic questions, and PDF-backed questions.
 
 - [ ] Add a small test suite.
-  Focus on chunking, permissions, retrieval, citation detection, and evaluation
-  row validation.
+      Focus on chunking, permissions, retrieval, citation detection, and evaluation
+      row validation.
 
 - [ ] Add README screenshots and a short architecture diagram.
-  Make it easy to understand the system quickly before reading the code.
+      Make it easy to understand the system quickly before reading the code.
 
 - [ ] Add a demo flow section.
-  Show how to run ingestion, ask a question as Alice, ask a restricted question
-  as Bob, and view the evaluation dashboard.
+      Show how to run ingestion, ask a question as Alice, ask a restricted question
+      as Bob, and view the evaluation dashboard.
 
 - [ ] Add a known limitations section.
-  Clearly mention local ChromaDB, simple local users, basic chunking, no real
-  upload workflow, and no production deployment yet.
+      Clearly mention local ChromaDB, simple local users, basic chunking, no real
+      upload workflow, and no production deployment yet.
 
 ## RAG-Specific Improvement Areas
 
